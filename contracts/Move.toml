@@ -1,0 +1,13 @@
+[package]
+name = "arcadia-contracts"
+version = "1.0.0"
+authors = []
+
+[addresses]
+arcadia = ""  # Use your public key here (Devnet address)
+aptos_framework = "0x1"
+
+[dependencies]
+AptosFramework = { git = "https://github.com/aptos-labs/aptos-core.git", subdir = "aptos-move/framework/aptos-framework", rev = "testnet" }
+
+[dev-dependencies]
