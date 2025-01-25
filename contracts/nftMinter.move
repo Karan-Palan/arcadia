@@ -86,4 +86,29 @@ module arcadia::nft_mint {
         // Increment mint counter
         collection.mint_count = collection.mint_count + 1;
     }
+    // ======== Error Codes ========
+    const ERROR_ALREADY_MINTED: u64 = 102;
+    const ERROR_INVALID_TOKEN_ID: u64 = 103;
+
+    public entry fun complete_mint(
+        token_id: u64
+    ) acquires NFTCollection, MintEvents {
+        let collection = borrow_global_mut<NFTCollection>(@apticity);
+        
+        assert!(simple_map::contains_key(&collection.token_data, &token_id), ERROR_INVALID_TOKEN_ID);
+        let token = simple_map::borrow_mut(&mut collection.token_data, &token_id);
+        
+        assert!(!token.mint_status.is_revealed, ERROR_ALREADY_MINTED);
+        
+        // Update token status
+        token.mint_status.is_revealed = true;
+        token.mint_status.is_locked = true;
+
+        // Emit completion event
+        let events = borrow_global_mut<MintEvents>(@apticity);
+        event::emit_event(&mut events.mint_completed_events, MintCompletedEvent {
+            token_id,
+            owner: token.owner
+        });
+    }
 
