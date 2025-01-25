@@ -111,4 +111,31 @@ module arcadia::nft_mint {
             owner: token.owner
         });
     }
+    // ======== View Functions ========
+    #[view]
+    public fun get_token_data(token_id: u64): TokenData acquires NFTCollection {
+        let collection = borrow_global<NFTCollection>(@apticity);
+        assert!(simple_map::contains_key(&collection.token_data, &token_id), ERROR_INVALID_TOKEN_ID);
+        *simple_map::borrow(&collection.token_data, &token_id)
+    }
 
+    #[view]
+    public fun get_collection_info(): (u64, u64) acquires NFTCollection {
+        let collection = borrow_global<NFTCollection>(@apticity);
+        (collection.mint_count, MAX_SUPPLY)
+    }
+
+    #[view]
+    public fun get_minted_tokens(): vector<TokenData> acquires NFTCollection {
+        let collection = borrow_global<NFTCollection>(@apticity);
+        let tokens = vector::empty<TokenData>();
+        let i = 0;
+        while (i < collection.mint_count) {
+            if (simple_map::contains_key(&collection.token_data, &i)) {
+                vector::push_back(&mut tokens, *simple_map::borrow(&collection.token_data, &i));
+            };
+            i = i + 1;
+        };
+        tokens
+    }
+}
