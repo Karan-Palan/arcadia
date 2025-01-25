@@ -1,0 +1,18 @@
+@import "tailwindcss";
+
+/* @theme {
+  --font-vapor: 'vapor16bit', 'sans-serif';
+}
+
+@font-face {
+  font-family: 'vapor16bit';
+  src: url('./assets/fonts/DiaryOfAn8BitMage-lYDD.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+} */
+
+.press2start-regular {
+  font-family: "Press Start 2P";
+  font-weight: 400;
+  font-style: normal;
+}
