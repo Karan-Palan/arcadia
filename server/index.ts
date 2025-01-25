@@ -1,1 +1,1 @@
-// TODO: Use Apticty SDK
+// TODO: Use Aptos SDK

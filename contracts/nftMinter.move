@@ -48,3 +48,42 @@ module arcadia::nft_mint {
         });
     }
 }
+    const ERROR_MAX_SUPPLY_REACHED: u64 = 101;
+
+    // ======== Core Minting Logic ========
+    public entry fun initiate_mint(
+        minter: &signer, 
+        metadata: vector<u8>
+    ) acquires NFTCollection, MintEvents {
+        let collection = borrow_global_mut<NFTCollection>(@arcadia);
+        let minter_addr = std::signer::address_of(minter);
+        
+        // Validate mint conditions
+        assert!(collection.mint_count < MAX_SUPPLY, ERROR_MAX_SUPPLY_REACHED);
+        
+        // Create new token
+        let new_token = TokenData {
+            token_id: collection.mint_count,
+            metadata,
+            owner: minter_addr,
+            mint_time: timestamp::now_microseconds(),
+            mint_status: MintStatus {
+                is_revealed: false,
+                is_locked: false
+            }
+        };
+
+        // Store token and emit event
+        simple_map::add(&mut collection.token_data, collection.mint_count, new_token);
+        
+        let events = borrow_global_mut<MintEvents>(@arcadia);
+        event::emit_event(&mut events.mint_started_events, MintStartedEvent {
+            token_id: collection.mint_count,
+            minter: minter_addr,
+            timestamp: timestamp::now_microseconds()
+        });
+
+        // Increment mint counter
+        collection.mint_count = collection.mint_count + 1;
+    }
+
