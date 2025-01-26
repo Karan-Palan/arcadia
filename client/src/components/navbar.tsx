@@ -161,7 +161,7 @@ const Navbar = () => {
                   <img
                     src="/petra-wallet.png"
                     alt="Petra Wallet"
-                    className="w-4 h-4"
+                    className="w-10 h-10"
                   />
                   Petra Wallet
                 </button>

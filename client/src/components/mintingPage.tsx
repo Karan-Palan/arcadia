@@ -96,7 +96,6 @@ export default function MintingPage() {
 
   return (
     <div className="min-h-screen bg-black text-white relative overflow-hidden">
-      {/* Rest of the JSX remains the same */}
       <div
         className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom,_#1a1a1a,_transparent_80%)] opacity-30 pointer-events-none"
         aria-hidden="true"
