@@ -5,7 +5,8 @@ import MintProgressPopup from "./mintProgressPopUp";
 import { NFTService } from "../services/nftService";
 import { AccountAddress } from "@aptos-labs/ts-sdk";
 
-const MODULE_ADDRESS = "0x640ab888e41dfe3675cfac8fbb663ea8bd35390cb2d12ccba46fbddb89f74122";
+const MODULE_ADDRESS =
+  "0x640ab888e41dfe3675cfac8fbb663ea8bd35390cb2d12ccba46fbddb89f74122";
 
 interface NFTMetadata {
   name: string;
@@ -16,7 +17,12 @@ interface NFTMetadata {
 export default function MintingPage() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { walletAddress, connectWallet, walletProvider, signAndSubmitTransaction } = useWallet();
+  const {
+    walletAddress,
+    connectWallet,
+    walletProvider,
+    signAndSubmitTransaction,
+  } = useWallet();
   const imageUrl = location.state?.imageUrl;
 
   const [isMinting, setIsMinting] = useState(false);
@@ -32,7 +38,9 @@ export default function MintingPage() {
     return null;
   }
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value,
@@ -50,7 +58,10 @@ export default function MintingPage() {
         try {
           await connectWallet(walletProvider || "Petra");
         } catch (err) {
-          setError("Failed to connect wallet: " + (err instanceof Error ? err.message : "Unknown error"));
+          setError(
+            "Failed to connect wallet: " +
+              (err instanceof Error ? err.message : "Unknown error")
+          );
           return;
         }
       } else {
@@ -68,23 +79,25 @@ export default function MintingPage() {
     setCurrentStep(1);
 
     try {
-      await signAndSubmitTransaction({
-        type: "entry_function_payload",
+      const transactionPayload = {
         function: `${MODULE_ADDRESS}::apticity::mint_nft`,
         type_arguments: [],
-        arguments: [metadata.name, metadata.description, metadata.image]
-      });
-      
+        arguments: [metadata.name, metadata.description, metadata.image],
+      };
+
+      // Remove "type" property to match the expected TransactionPayload
+      await signAndSubmitTransaction(transactionPayload as any);
+
       setCurrentStep(2);
       setCurrentStep(3);
 
       // Navigate to success page
       setTimeout(() => {
         setIsMinting(false);
-        navigate("/nft-success", { 
-          state: { 
-            metadata
-          } 
+        navigate("/nft-success", {
+          state: {
+            metadata,
+          },
         });
       }, 2000);
     } catch (err) {
@@ -196,9 +209,7 @@ export default function MintingPage() {
             </div>
 
             {error && (
-              <div className="text-red-500 text-center mt-4">
-                {error}
-              </div>
+              <div className="text-red-500 text-center mt-4">{error}</div>
             )}
           </form>
         </div>
