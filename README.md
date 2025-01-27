@@ -2,9 +2,8 @@
 
 Arcadia is an innovative NFT maker platform that empowers users to effortlessly create, customize, and surprise themselves with unique digital collectibles, blending creativity with blockchain technology. The platform is designed to transform the NFT creation process into an engaging, interactive, and creative journey.
 
-[![Demo](assets/Demo.png)](assets/Demo.webm)
+---[Demo.webm](https://github.com/user-attachments/assets/2e853a5f-c2f5-4f88-978f-8fc8354b21a6)
 
----
 
 ## Overview
 
