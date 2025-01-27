@@ -83,18 +83,10 @@ const Navbar = () => {
         </li>
         <li className="py-2 lg:py-0">
           <a
-            href="#"
+            href="https://arcadiapump.vercel.app/"
             className="block lg:inline hover:text-pink-400 transition-colors px-4"
           >
             Marketplace
-          </a>
-        </li>
-        <li className="py-2 lg:py-0">
-          <a
-            href="#"
-            className="block lg:inline hover:text-pink-400 transition-colors px-4"
-          >
-            Contact
           </a>
         </li>
       </ul>
