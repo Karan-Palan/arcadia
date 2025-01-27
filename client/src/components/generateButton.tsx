@@ -1,38 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AlertCircle, Loader2, ChevronDown, Sparkles } from "lucide-react";
 import { useWallet } from "./walletProvider";
-
-// Define model interface
-interface Model {
-  id: string;
-  name: string;
-  provider: string;
-  endpoint: string;
-  description: string;
-  maxTokens: number;
-}
-
-// Define supported models
-const SUPPORTED_MODELS: Model[] = [
-  {
-    id: "flux-1",
-    name: "FLUX-1.dev",
-    provider: "Black Forest Labs",
-    endpoint:
-      "https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-dev",
-    description: "Optimized for artistic and creative generations.",
-    maxTokens: 77,
-  },
-  {
-    id: "sd-2-1",
-    name: "Stable Diffusion 2.1",
-    provider: "Stability AI",
-    endpoint:
-      "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-2-1",
-    description: "Versatile image generation model.",
-    maxTokens: 77,
-  },
-];
 
 // Define predefined prompt templates
 const PROMPT_TEMPLATES = [
@@ -55,19 +23,63 @@ export const GenerateButton: React.FC<GenerateButtonProps> = ({
   prompt,
   onImageGenerated,
   onPromptChange,
-  apiKey = import.meta.env.VITE_HUGGING_FACE_API_KEY,
+  apiKey = import.meta.env.VITE_OPENAI_API_KEY,
 }) => {
+  console.log("Loaded API Key:", apiKey);
+
   const { walletAddress, connectWallet } = useWallet();
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [selectedModelId, setSelectedModelId] = useState<string>("flux-1");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const maxRequestsPerHour = 10;
 
-  const selectedModel = SUPPORTED_MODELS.find(
-    (model) => model.id === selectedModelId
-  )!;
+  // Initialize rate limit data from localStorage
+  useEffect(() => {
+    if (!localStorage.getItem("imageGenRequestCount")) {
+      localStorage.setItem(
+        "imageGenRequestCount",
+        JSON.stringify({ count: 0, lastReset: Date.now() })
+      );
+    }
+  }, []);
 
-  // Generate image
+  const canMakeRequest = () => {
+    const rateLimitData = JSON.parse(
+      localStorage.getItem("imageGenRequestCount") || "{}"
+    );
+    const { count, lastReset } = rateLimitData;
+
+    const oneHour = 60 * 60 * 1000; // 1 hour in milliseconds
+    const currentTime = Date.now();
+
+    if (currentTime - lastReset > oneHour) {
+      // Reset the counter if more than an hour has passed
+      localStorage.setItem(
+        "imageGenRequestCount",
+        JSON.stringify({ count: 0, lastReset: currentTime })
+      );
+      return true;
+    }
+
+    return count < maxRequestsPerHour;
+  };
+
+  const incrementRequestCount = () => {
+    const rateLimitData = JSON.parse(
+      localStorage.getItem("imageGenRequestCount") || "{}"
+    );
+    const { count, lastReset } = rateLimitData;
+
+    localStorage.setItem(
+      "imageGenRequestCount",
+      JSON.stringify({
+        count: count + 1,
+        lastReset: lastReset || Date.now(),
+      })
+    );
+  };
+
+  // Generate image using OpenAI's DALL-E API
   const generateImage = async () => {
     if (!walletAddress) {
       setError("Please connect your wallet to generate images.");
@@ -79,30 +91,43 @@ export const GenerateButton: React.FC<GenerateButtonProps> = ({
       return;
     }
 
+    if (!canMakeRequest()) {
+      setError("Rate limit exceeded. Try again after an hour.");
+      return;
+    }
+
     setIsGenerating(true);
     setError(null);
 
     try {
-      const response = await fetch(selectedModel.endpoint, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          inputs: prompt,
-          options: { wait_for_model: true },
-        }),
-      });
+      const response = await fetch(
+        "https://api.openai.com/v1/images/generations",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            prompt, // User-provided prompt
+            n: 1, // Number of images to generate
+            size: "1024x1024", // Image resolution
+            response_format: "url", // Get image as a URL
+          }),
+        }
+      );
 
       if (!response.ok) {
         const errorMessage = await response.text();
         throw new Error(errorMessage);
       }
 
-      const blob = await response.blob();
-      const imageUrl = URL.createObjectURL(blob);
+      const data = await response.json();
+      const imageUrl = data.data[0].url; // Extract the image URL
       onImageGenerated(imageUrl);
+
+      // Increment the request count
+      incrementRequestCount();
     } catch (err) {
       setError("Failed to generate image. Please try again.");
     } finally {
@@ -121,7 +146,7 @@ export const GenerateButton: React.FC<GenerateButtonProps> = ({
     <div className="relative space-y-4">
       {/* Header */}
       <h2 className="text-center text-pink-400 text-xl font-semibold">
-        Choose a Model & Generate
+        Generate NFT Artwork
       </h2>
 
       {/* Prompt Input */}
@@ -142,7 +167,11 @@ export const GenerateButton: React.FC<GenerateButtonProps> = ({
           disabled={isGenerating}
           className={`flex-1 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 
             text-white font-semibold rounded-lg shadow-sm transition-all
-            ${isGenerating ? "opacity-50 cursor-not-allowed" : "hover:from-pink-600 hover:to-purple-600"}
+            ${
+              isGenerating
+                ? "opacity-50 cursor-not-allowed"
+                : "hover:from-pink-600 hover:to-purple-600"
+            }
           `}
         >
           {isGenerating ? (
@@ -160,40 +189,6 @@ export const GenerateButton: React.FC<GenerateButtonProps> = ({
         >
           <Sparkles className="w-5 h-5 inline" /> Surprise Me
         </button>
-      </div>
-
-      {/* Model Selector */}
-      <div className="relative">
-        <button
-          onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-          className="w-full px-4 py-2 bg-purple-800/30 text-white border border-purple-600 rounded-lg 
-            flex justify-between items-center hover:bg-purple-900/50 transition-all"
-        >
-          {selectedModel.name}
-          <ChevronDown
-            className={`w-5 h-5 transition-transform ${
-              isDropdownOpen ? "rotate-180" : ""
-            }`}
-          />
-        </button>
-        {isDropdownOpen && (
-          <div className="absolute z-10 w-full bg-purple-900/70 border border-purple-600 rounded-lg mt-2">
-            {SUPPORTED_MODELS.map((model) => (
-              <button
-                key={model.id}
-                onClick={() => {
-                  setSelectedModelId(model.id);
-                  setIsDropdownOpen(false);
-                }}
-                className={`w-full px-4 py-2 text-left text-white hover:bg-purple-800/50 transition-all ${
-                  selectedModelId === model.id ? "bg-purple-700" : ""
-                }`}
-              >
-                {model.name} <span className="text-sm text-pink-300">({model.provider})</span>
-              </button>
-            ))}
-          </div>
-        )}
       </div>
 
       {/* Error Display */}
